@@ -88,7 +88,7 @@ def test_dockerfile_rendering(tmpdir, mocker, name, desc_part, exp_regex):
     mocker.patch("cekit.builders.osbs.OSBSBuilder.dependencies")
     target = str(tmpdir.mkdir("target"))
     generate(target, ["--redhat", "build", "--dry-run", "podman"], desc_part)
-    regex_dockerfile(target, exp_regex, "Containerfile")
+    regex_dockerfile(target, [exp_regex], "Containerfile")
 
 
 def test_dockerfile_docker_odcs_pulp(tmpdir, mocker, caplog):
@@ -107,7 +107,7 @@ def test_dockerfile_docker_odcs_pulp(tmpdir, mocker, caplog):
     }
 
     generate(target, ["--redhat", "build", "--dry-run", "podman"], desc_part)
-    regex_dockerfile(target, "repos/content_sets_odcs.repo", "Containerfile")
+    regex_dockerfile(target, ["repos/content_sets_odcs.repo"], "Containerfile")
     assert "Using Red Hat ODCS service to create composes" in caplog.text
     caplog.clear()
     generate(target, ["--redhat", "test", "behave"], desc_part)
@@ -138,7 +138,7 @@ def test_dockerfile_docker_odcs_rpm(tmpdir, mocker):
 
     generate(target, ["build", "--dry-run", "osbs"], desc_part)
 
-    regex_dockerfile(target, "RUN yum --setopt=tsflags=nodocs install -y foo-repo.rpm")
+    regex_dockerfile(target, ["RUN yum --setopt=tsflags=nodocs install -y foo-repo.rpm"])
 
 
 def test_dockerfile_docker_odcs_rpm_microdnf(tmpdir, mocker):
@@ -162,15 +162,11 @@ def test_dockerfile_docker_odcs_rpm_microdnf(tmpdir, mocker):
         ["build", "--dry-run", "--container-file", "Dockerfile", "podman"],
         desc_part,
     )
-    regex_dockerfile(
-        target,
+    regex_dockerfile(target, [
         "RUN microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y foo-repo.rpm",
-    )
-    regex_dockerfile(
-        target,
         "RUN microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y a b",
-    )
-    regex_dockerfile(target, "rpm -q a b")
+        "rpm -q a b"
+    ])
 
 
 def test_dockerfile_docker_odcs_rpm_microdnf_custom_flag_1(tmpdir, mocker):
@@ -195,9 +191,11 @@ def test_dockerfile_docker_odcs_rpm_microdnf_custom_flag_1(tmpdir, mocker):
         ["build", "--dry-run", "--container-file", "Dockerfile", "podman"],
         desc_part,
     )
-    regex_dockerfile(target, "RUN microdnf  install -y foo-repo.rpm")
-    regex_dockerfile(target, "RUN microdnf  install -y a b")
-    regex_dockerfile(target, "rpm -q a b")
+    regex_dockerfile(target, [
+        "RUN microdnf  install -y foo-repo.rpm",
+        "RUN microdnf  install -y a b",
+        "rpm -q a b"
+    ])
 
 
 def test_dockerfile_docker_odcs_rpm_microdnf_custom_flag_2(tmpdir, mocker):
@@ -222,11 +220,11 @@ def test_dockerfile_docker_odcs_rpm_microdnf_custom_flag_2(tmpdir, mocker):
         ["build", "--dry-run", "--container-file", "Dockerfile", "podman"],
         desc_part,
     )
-    regex_dockerfile(
-        target, "RUN microdnf --setopt=tsflags=nodocs install -y foo-repo.rpm"
-    )
-    regex_dockerfile(target, "RUN microdnf --setopt=tsflags=nodocs install -y a b")
-    regex_dockerfile(target, "rpm -q a b")
+    regex_dockerfile(target, [
+        "RUN microdnf --setopt=tsflags=nodocs install -y foo-repo.rpm",
+        "RUN microdnf --setopt=tsflags=nodocs install -y a b",
+        "rpm -q a b"
+    ])
 
 
 def test_dockerfile_osbs_odcs_pulp(tmpdir, mocker):
@@ -361,7 +359,7 @@ def test_dockerfile_osbs_odcs_rpm(tmpdir, mocker):
         },
     )
 
-    regex_dockerfile(target, "RUN yum --setopt=tsflags=nodocs install -y foo-repo.rpm")
+    regex_dockerfile(target, ["RUN yum --setopt=tsflags=nodocs install -y foo-repo.rpm"])
 
 
 # https://github.com/cekit/cekit/issues/400
@@ -410,9 +408,11 @@ def test_default_package_manager(tmpdir):
         },
     )
 
-    regex_dockerfile(target, "RUN yum --setopt=tsflags=nodocs install -y foo-repo.rpm")
-    regex_dockerfile(target, "RUN yum --setopt=tsflags=nodocs install -y a")
-    regex_dockerfile(target, "rpm -q a")
+    regex_dockerfile(target, [
+        "RUN yum --setopt=tsflags=nodocs install -y foo-repo.rpm",
+        "RUN yum --setopt=tsflags=nodocs install -y a",
+        "rpm -q a"
+    ])
 
 
 # https://github.com/cekit/cekit/issues/400
@@ -440,15 +440,11 @@ def test_dockerfile_custom_package_manager_with_overrides(tmpdir):
             "osbs": {"repository": {"name": "repo_name", "branch": "branch_name"}},
         },
     )
-    regex_dockerfile(
-        target,
+    regex_dockerfile(target, [
         "RUN microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y foo-repo.rpm",
-    )
-    regex_dockerfile(
-        target,
         "RUN microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y a b",
-    )
-    regex_dockerfile(target, "rpm -q a")
+        "rpm -q a"
+    ])
 
 
 # https://github.com/cekit/cekit/issues/462
@@ -476,9 +472,11 @@ def test_dockerfile_custom_package_manager_with_overrides_overriden_again(tmpdir
             "osbs": {"repository": {"name": "repo_name", "branch": "branch_name"}},
         },
     )
-    regex_dockerfile(target, "RUN dnf --setopt=tsflags=nodocs install -y foo-repo.rpm")
-    regex_dockerfile(target, "RUN dnf --setopt=tsflags=nodocs install -y a b")
-    regex_dockerfile(target, "rpm -q a")
+    regex_dockerfile(target, [
+        "RUN dnf --setopt=tsflags=nodocs install -y foo-repo.rpm",
+        "RUN dnf --setopt=tsflags=nodocs install -y a b",
+        "rpm -q a"
+    ])
 
 
 # https://github.com/cekit/cekit/issues/400
@@ -497,15 +495,11 @@ def test_dockerfile_osbs_odcs_rpm_microdnf(tmpdir):
             "osbs": {"repository": {"name": "repo_name", "branch": "branch_name"}},
         },
     )
-    regex_dockerfile(
-        target,
+    regex_dockerfile(target, [
         "RUN microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y foo-repo.rpm",
-    )
-    regex_dockerfile(
-        target,
         "RUN microdnf --setopt=install_weak_deps=0 --setopt=tsflags=nodocs install -y a",
-    )
-    regex_dockerfile(target, "rpm -q a")
+        "rpm -q a"
+    ])
 
 
 # https://github.com/cekit/cekit/issues/400
@@ -528,9 +522,11 @@ def test_supported_package_managers(tmpdir, manager):
     flags = "--setopt=tsflags=nodocs"
     if "microdnf" in manager:
         flags = "--setopt=install_weak_deps=0 " + flags
-    regex_dockerfile(target, f"RUN {manager} {flags} install -y foo-repo.rpm")
-    regex_dockerfile(target, f"RUN {manager} {flags} install -y a")
-    regex_dockerfile(target, "rpm -q a")
+    regex_dockerfile(target, [
+        f"RUN {manager} {flags} install -y foo-repo.rpm",
+        f"RUN {manager} {flags} install -y a",
+        "rpm -q a"
+    ])
 
 
 def test_supported_package_managers_apk(tmpdir, caplog):
@@ -547,8 +543,10 @@ def test_supported_package_managers_apk(tmpdir, caplog):
             }
         },
     )
-    regex_dockerfile(target, "RUN apk  add a")
-    regex_dockerfile(target, "apk info -e a")
+    regex_dockerfile(target, [
+        "RUN apk  add a",
+        "apk info -e a"
+    ])
     assert (
         "Package manager apk does not support defining repositories, skipping all repositories"
         in caplog.text
@@ -569,11 +567,10 @@ def test_supported_package_managers_apt(tmpdir, caplog):
             }
         },
     )
-    regex_dockerfile(
-        target,
+    regex_dockerfile(target, [
         "RUN apt-get update && apt-get --no-install-recommends install -y a b=1.0.0",
-    )
-    regex_dockerfile(target, "dpkg-query --list a b")
+        "dpkg-query --list a b"
+    ])
     assert (
         "Package manager apt-get does not support defining repositories, skipping all repositories"
         in caplog.text
@@ -584,7 +581,7 @@ def test_supported_package_managers_apt(tmpdir, caplog):
 def test_dockerfile_do_not_copy_modules_if_no_modules(tmpdir):
     target = str(tmpdir.mkdir("target"))
     generate(target, ["build", "--dry-run", "podman"])
-    regex_dockerfile(target, "^((?!COPY modules /tmp/scripts/))", "Containerfile")
+    regex_dockerfile(target, ["^((?!COPY modules /tmp/scripts/))"], "Containerfile")
 
 
 # https://github.com/cekit/cekit/issues/406
@@ -613,7 +610,7 @@ def test_dockerfile_copy_modules_if_modules_defined(tmpdir, caplog):
         },
     )
 
-    regex_dockerfile(target, "COPY modules/foo /tmp/scripts/foo", "Containerfile")
+    regex_dockerfile(target, ["COPY modules/foo /tmp/scripts/foo"], "Containerfile")
 
 
 def test_dockerfile_destination_of_artifact(mocker, tmpdir):
@@ -653,25 +650,15 @@ def test_dockerfile_destination_of_artifact(mocker, tmpdir):
             ]
         },
     )
-    regex_dockerfile(
-        target,
+    regex_dockerfile(target, [
         """# Copy 'testimage' image general artifacts to '/tmp/artifacts/' destination""",
-    )
-    regex_dockerfile(
-        target, r"^\s+COPY \\\s+abc \\\s+one \\\s+111 \\\s+/tmp/artifacts/$"
-    )
-    regex_dockerfile(
-        target,
+        r"^\s+COPY \\\s+abc \\\s+one \\\s+111 \\\s+/tmp/artifacts/$",
         """# Copy 'testimage' image general artifacts to '/tmp/custom/' destination""",
-    )
-    regex_dockerfile(target, r"^\s+COPY \\\s+def \\\s+two \\\s+222 \\\s+/tmp/custom/$")
-    regex_dockerfile(target, """# Copy 'testimage' image stage artifacts""")
-    regex_dockerfile(
-        target, r"^\s+COPY --from=image-name /some/path.jar /tmp/artifacts/aaa$"
-    )
-    regex_dockerfile(
-        target, r"^\s+COPY --from=image-name /some/other-path.jar /tmp/custom/bbb$"
-    )
+        r"^\s+COPY \\\s+def \\\s+two \\\s+222 \\\s+/tmp/custom/$",
+        """# Copy 'testimage' image stage artifacts""",
+        r"^\s+COPY --from=image-name /some/path.jar /tmp/artifacts/aaa$",
+        r"^\s+COPY --from=image-name /some/other-path.jar /tmp/custom/bbb$",
+    ])
 
 
 # https://github.com/cekit/cekit/issues/648
@@ -697,10 +684,12 @@ def test_overrides_applied_to_all_multi_stage_images(tmpdir):
         ],
         descriptor,
     )
-    regex_dockerfile(target, "^###### START image 'builderimage:SNAPSHOT'$")
-    regex_dockerfile(target, "^###### END image 'builderimage:SNAPSHOT'$")
-    regex_dockerfile(target, "^###### START image 'targetimage:SNAPSHOT'$")
-    regex_dockerfile(target, "^###### END image 'targetimage:SNAPSHOT'$")
+    regex_dockerfile(target, [
+        "^###### START image 'builderimage:SNAPSHOT'$",
+        "^###### END image 'builderimage:SNAPSHOT'$",
+        "^###### START image 'targetimage:SNAPSHOT'$",
+        "^###### END image 'targetimage:SNAPSHOT'$"
+    ])
 
 
 def test_package_removal_and_install_and_reinstall(tmpdir):
@@ -720,7 +709,7 @@ def test_package_removal_and_install_and_reinstall(tmpdir):
             "osbs": {"repository": {"name": "repo_name", "branch": "branch_name"}},
         },
     )
-    regex_dockerfile(target, "remove -y b")
+    regex_dockerfile(target, ["remove -y b"])
     with open(os.path.join(target, "target", "image", "Dockerfile"), "r") as _file:
         dockerfile = _file.read()
     assert (
@@ -753,7 +742,7 @@ def test_package_removal_without_install(tmpdir):
             "osbs": {"repository": {"name": "repo_name", "branch": "branch_name"}},
         },
     )
-    regex_dockerfile(target, "remove -y b")
+    regex_dockerfile(target, ["remove -y b"])
 
 
 def test_package_reinstall(tmpdir):
@@ -771,7 +760,7 @@ def test_package_reinstall(tmpdir):
             "osbs": {"repository": {"name": "repo_name", "branch": "branch_name"}},
         },
     )
-    regex_dockerfile(target, "reinstall -y tzdata")
+    regex_dockerfile(target, ["reinstall -y tzdata"])
 
 
 def test_args_podman(tmpdir):
@@ -840,11 +829,13 @@ def test_cleanup_rpm_dnf_default_pkg_manager(tmpdir):
             "osbs": {"repository": {"name": "repo_name", "branch": "branch_name"}},
         },
     )
-    regex_dockerfile(target, "rm -rf.*/var/cache/yum")
-    regex_dockerfile(target, "rm -rf.*/var/lib/dnf")
-    regex_dockerfile(target, "rm -rf.*/var/cache/apt")
-    regex_dockerfile(target, "rm -rf.*/var/cache/dnf")
-    regex_not_dockerfile(target, "rm -rf.*/var/lib/rpm")
+    regex_dockerfile(target, [
+        "rm -rf.*/var/cache/yum",
+        "rm -rf.*/var/lib/dnf",
+        "rm -rf.*/var/cache/apt",
+        "rm -rf.*/var/cache/dnf"
+    ])
+    regex_not_dockerfile(target, ["rm -rf.*/var/lib/rpm"])
 
 
 def generate(image_dir, command, descriptor=None, exit_code=0):
@@ -875,14 +866,14 @@ def generate(image_dir, command, descriptor=None, exit_code=0):
             return yaml.safe_load(desc)
 
 
-def regex_dockerfile(image_dir, exp_regex, container_file="Dockerfile"):
+def regex_dockerfile(image_dir, exp_regexes, container_file="Dockerfile"):
     with open(os.path.join(image_dir, "target", "image", container_file), "r") as fd:
         dockerfile_content = fd.read()
-        regex = re.compile(exp_regex, re.MULTILINE)
-        assert regex.search(dockerfile_content) is not None
+        for regex in map(lambda e: re.compile(e, re.MULTILINE), exp_regexes):
+            assert regex.search(dockerfile_content) is not None
 
-def regex_not_dockerfile(image_dir, exp_regex, container_file="Dockerfile"):
+def regex_not_dockerfile(image_dir, exp_regexes, container_file="Dockerfile"):
     with open(os.path.join(image_dir, "target", "image", container_file), "r") as fd:
         dockerfile_content = fd.read()
-        regex = re.compile(exp_regex, re.MULTILINE)
-        assert regex.search(dockerfile_content) is None
+        for regex in map(lambda e: re.compile(e, re.MULTILINE), exp_regexes):
+            assert regex.search(dockerfile_content) is None
