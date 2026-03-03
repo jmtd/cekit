@@ -51,6 +51,7 @@ map:
   modules: {type: any}
   packages: {type: any}
   osbs: {type: any}
+  konflux: {type: any}
   volumes: {type: any}
   help:
     map:
