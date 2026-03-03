@@ -4,6 +4,7 @@ from cekit.errors import CekitError
 from cekit.tools import Chdir, run_wrapper
 import os
 import logging
+import shutil
 
 LOGGER = logging.getLogger("cekit")
 
