@@ -1,9 +1,11 @@
 import yaml
+from cekit.descriptor import Descriptor
 
 konflux_schema = yaml.safe_load(
 """
 map:
   repository: {type: any}
+  rpms.in.yaml: {type: any}
 """)
 
 repository_schema = yaml.safe_load("""
