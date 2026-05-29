@@ -175,6 +175,19 @@ def get_latest_image_version(image: str) -> str:
     return f'{image.split(":")[0]}:{tag}'
 
 
+def split_image_name_ref(img: str) -> str:
+    """
+    Convert a container image URI into a tuple of the base image and the
+    reference. If the original URI did not specify a reference, default to
+    'latest'.
+    """
+    ref = 'latest'
+    if img.find(':') > 0:
+        bits = img.split(':')
+        ref  = bits.pop()
+        img  = ':'.join(bits)
+    return (img, ref)
+
 def get_tag_from_inspect_struct(struct: Mapping) -> str:
     """Get the tag of a component from it's inspect struct
 

@@ -8,6 +8,8 @@ from cekit.generator.base import Generator
 from cekit.cekit_types import PathType
 from typing import TYPE_CHECKING, Callable, Dict, List
 
+from cekit.tools import get_skopeo_inspect_json, split_image_name_ref
+
 class KonfluxGenerator(Generator):
     def prepare_artifacts(self) -> None:
         LOGGER.debug("KonfluxGenerator prepare_artifacts")
@@ -17,6 +19,7 @@ class KonfluxGenerator(Generator):
                 raise NotImplementedError("Artifacts handling is not implemented")
 
     def generate(self) -> None:
+        self._resolve_floating_parent_image()
         super(KonfluxGenerator, self).generate()
         self._render_rpm_lockfile()
 
@@ -36,3 +39,16 @@ class KonfluxGenerator(Generator):
         pkgs = list(set(th.packages_to_install(self.image)))
         pkgs.sort()
         return pkgs
+
+    def _resolve_floating_parent_image(self) -> None:
+        """
+        Replace the FROM image tag/digest specification (if any) with the
+        Manifest List Digest that it current resolves to.
+        """
+        # we don't worry about from: in any modules (see #958)
+        (frm, tag) = split_image_name_ref(self.image['from'])
+        LOGGER.debug("KonfluxGenerator._resolve_floating_parent_image: {}, {}".format(frm,tag))
+        image_json = get_skopeo_inspect_json(frm)
+        digest = image_json['Digest']
+        LOGGER.debug("KonfluxGenerator._resolve_floating_parent_image: digest is {}".format(digest))
+        self.image['from'] = frm + "@" + digest
