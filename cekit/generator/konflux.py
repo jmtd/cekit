@@ -9,22 +9,6 @@ from cekit.cekit_types import PathType
 from typing import TYPE_CHECKING, Callable, Dict, List
 
 class KonfluxGenerator(Generator):
-    def __init__(
-        self,
-        descriptor_path: PathType,
-        target: PathType,
-        container_file: str,
-        overrides: List[str],
-        no_squash: bool,
-    ):
-        super(KonfluxGenerator, self).__init__(
-            descriptor_path, target, container_file, overrides, no_squash
-        )
-
-    def init(self):
-        LOGGER.debug("KonfluxGenerator init")
-        super(KonfluxGenerator, self).init()
-
     def prepare_artifacts(self) -> None:
         LOGGER.debug("KonfluxGenerator prepare_artifacts")
 
