@@ -203,13 +203,18 @@ class Generator(object):
         self.prepare_artifacts()
         self.prepare_repositories()
         self.image.remove_none_keys()
-        self.resolve_floating_parent_image()
+        if self.resolve_base_image_digest():
+            self.resolve_floating_parent_image()
         self.image.write(os.path.join(self.target, "image.yaml"))
         self.render_image_file()
         self.render_help()
 
     def add_redhat_overrides(self):
         self._overrides.append(self.get_redhat_overrides())
+
+    def resolve_base_image_digest(self):
+        """Whether or not to look up the base image 256sum digest."""
+        return False
 
     def add_build_labels(self):
         image_labels = self.image.labels
@@ -241,13 +246,14 @@ class Generator(object):
                 Label({"name": "summary", "value": description["value"]})
             )
 
-        # Inject OCI base image labels only when neither is already set by the user.
-        # If the user has set either label we leave both alone — never mix
-        # auto-detected values with user-supplied ones.
-        base = self.image.base
-        if base and base != "scratch":
-            if not self.image.label("org.opencontainers.image.base.name") and \
-                    not self.image.label("org.opencontainers.image.base.digest"):
+        if self.resolve_base_image_digest():
+            # Inject OCI base image labels only when neither is already set by the user.
+            # If the user has set either label we leave both alone — never mix
+            # auto-detected values with user-supplied ones.
+            base = self.image.base
+            if base and base != "scratch" \
+                    and not self.image.label("org.opencontainers.image.base.name") \
+                    and not self.image.label("org.opencontainers.image.base.digest"):
                 digest_info = get_base_image_digest_info(base)
                 if digest_info:
                     name, digest = digest_info
