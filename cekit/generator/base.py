@@ -33,7 +33,6 @@ from cekit.tools import (
     DependencyDefinition,
     Map,
     download_file,
-    get_base_image_digest_info,
     get_skopeo_inspect_json,
     load_descriptor,
     parse_env_timeout,
@@ -204,6 +203,7 @@ class Generator(object):
         self.prepare_repositories()
         self.image.remove_none_keys()
         self.resolve_base_image_digest()
+        self.add_opencontainers_base_labels()
         self.image.write(os.path.join(self.target, "image.yaml"))
         self.render_image_file()
         self.render_help()
@@ -245,23 +245,25 @@ class Generator(object):
                 Label({"name": "summary", "value": description["value"]})
             )
 
-        if self.resolve_base_image_digest():
-            # Inject OCI base image labels only when neither is already set by the user.
-            # If the user has set either label we leave both alone — never mix
-            # auto-detected values with user-supplied ones.
-            base = self.image.base
-            if base and base != "scratch" \
-                    and not self.image.label("org.opencontainers.image.base.name") \
-                    and not self.image.label("org.opencontainers.image.base.digest"):
-                digest_info = get_base_image_digest_info(base)
-                if digest_info:
-                    name, digest = digest_info
-                    image_labels.append(
-                        Label({"name": "org.opencontainers.image.base.name", "value": name})
-                    )
-                    image_labels.append(
-                        Label({"name": "org.opencontainers.image.base.digest", "value": digest})
-                    )
+
+    def add_opencontainers_base_labels(self):
+        # Inject OCI base image labels only when neither is already set by the
+        # user and the base reference has a digest (which may have been added
+        # by resolve_base_image_digest).
+        # If the user has set either label we leave both alone — never mix
+        # auto-detected values with user-supplied ones.
+        base = self.image.base
+        if base and base != "scratch" \
+            and base.find('@') > 0 \
+            and not self.image.label("org.opencontainers.image.base.name") \
+            and not self.image.label("org.opencontainers.image.base.digest"):
+
+            (name, digest) = split_image_name_ref(base)
+            self.image.labels.extend([
+                Label({"name": "org.opencontainers.image.base.name", "value": name}),
+                Label({"name": "org.opencontainers.image.base.digest", "value": digest})
+            ])
+
 
     def _modules(self) -> List["Modules"]:
         """
