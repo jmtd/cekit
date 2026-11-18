@@ -223,18 +223,26 @@ def get_latest_image_version(image: str) -> str:
     return f'{image.split(":")[0]}:{tag}'
 
 
-def split_image_name_ref(img: str) -> str:
+def split_image_name_ref(img: str) -> Tuple[str,str]:
     """
-    Convert a container image URI into a tuple of the base image and the
-    reference. If the original URI did not specify a reference, default to
-    'latest'.
+    Split a container image reference into a tuple of (base, ref), where ref
+    is the digest, if specified; or the tag, if specified; or 'latest'.
     """
-    ref = 'latest'
-    if img.find(':') > 0:
-        bits = img.split(':')
-        ref  = bits.pop()
-        img  = ':'.join(bits)
-    return (img, ref)
+    i = img.find('@')
+    if i > 0:
+        digest = img[i+1:]
+        # handle tag-and-digest case
+        (newimg,_) = split_image_name_ref(img[:i])
+        return (newimg, digest)
+
+    i = img.rfind(':')
+    if i > 0:
+        candidate_tag = img[i+1:]
+        # rule out host:port specifier
+        if not "/" in candidate_tag:
+            return (img[:i], candidate_tag)
+
+    return (img, 'latest')
 
 
 def get_tag_from_inspect_struct(struct: Mapping) -> str:
