@@ -37,7 +37,3 @@ class DockerGenerator(Generator):
                 artifact.copy(target_dir)
 
         logger.debug("Artifacts handled")
-
-    def resolve_base_image_digest(self):
-        """Whether or not to look up the base image 256sum digest."""
-        return True
