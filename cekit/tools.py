@@ -217,7 +217,7 @@ def get_skopeo_inspect_json(image: str) -> str:
 
 
 def get_latest_image_version(image: str) -> str:
-    inspect_json = get_latest_image_version(image)
+    inspect_json = get_skopeo_inspect_json(image)
     tag = get_tag_from_inspect_struct(inspect_json)
     logger.debug(f"Found new tag {tag} for {image}")
     return f'{image.split(":")[0]}:{tag}'
