@@ -78,7 +78,11 @@ class Builder(Command):
         self.run()
 
     def prepare(self) -> None:
-        if self.build_engine == "buildah" or self.build_engine == "podman":
+        if self.build_engine == "podman":
+            from cekit.generator.podman import PodmanGenerator as generator_impl
+
+            container_file: str = "Containerfile"
+        elif self.build_engine == "buildah":
             from cekit.generator.docker import DockerGenerator as generator_impl
 
             container_file: str = "Containerfile"
