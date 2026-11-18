@@ -1042,3 +1042,50 @@ def test_parse_env_timeout_4():
         match="Provided timeout value needs to be greater than zero",
     ):
         tools.parse_env_timeout("OSBS_TIMEOUT", "600")
+
+
+# (input, (name, ref)); ref is the digest if present, else the tag, else "latest"
+SPLIT_IMAGE_NAME_REF_CASES = [
+    # no port, no tag, no digest
+    ("ubi9"                                            , ("ubi9", "latest")),
+    ("ubi9/ubi-minimal"                                , ("ubi9/ubi-minimal", "latest")),
+    # no port, tag only
+    ("ubi9:9.4"                                        , ("ubi9", "9.4")),
+    ("ubi9/ubi-minimal:latest"                         , ("ubi9/ubi-minimal", "latest")),
+    # no port, digest only
+    ("ubi9@sha256:abcdef"                              , ("ubi9", "sha256:abcdef")),
+    # no port, tag and digest
+    ("ubi9:9.4@sha256:abcdef"                          , ("ubi9", "sha256:abcdef")),
+    # with port, no tag, no digest
+    ("localhost:5000/foo"                              , ("localhost:5000/foo", "latest")),
+    ("registry.example.com:5000/a/b"                   , ("registry.example.com:5000/a/b", "latest")),
+    # with port, tag only
+    ("localhost:5000/foo:1.2"                          , ("localhost:5000/foo", "1.2")),
+    ("registry.example.com:5000/a/b:v1"                , ("registry.example.com:5000/a/b", "v1")),
+    # with port, digest only
+    ("localhost:5000/foo@sha256:abcdef"                , ("localhost:5000/foo", "sha256:abcdef")) ,
+    ( "registry.example.com:5000/a/b@sha256:abcdef"    , ("registry.example.com:5000/a/b", "sha256:abcdef"),),
+    # with port, tag and digest
+    ("localhost:5000/foo:1.2@sha256:abcdef"            , ("localhost:5000/foo", "sha256:abcdef")) ,
+    ( "registry.example.com:5000/a/b:v1@sha256:abcdef" , ("registry.example.com:5000/a/b", "sha256:abcdef"),),
+
+    # IPv6 literal, no port
+    ("[::1]/foo"                               , ("[::1]/foo", "latest")),
+    ("[::1]/foo:1.2"                           , ("[::1]/foo", "1.2")),
+    ("[::1]/foo@sha256:abcdef"                 , ("[::1]/foo", "sha256:abcdef")),
+    ("[::1]/foo:1.2@sha256:abcdef"             , ("[::1]/foo", "sha256:abcdef")),
+    # IPv6 literal, with port
+    ("[::1]:5000/foo"                          , ("[::1]:5000/foo", "latest")),
+    ("[2001:db8::1]:5000/a/b"                  , ("[2001:db8::1]:5000/a/b", "latest")),
+    ("[::1]:5000/foo:1.2"                      , ("[::1]:5000/foo", "1.2")),
+    ("[2001:db8::1]:5000/a/b:v1"               , ("[2001:db8::1]:5000/a/b", "v1")),
+    ("[::1]:5000/foo@sha256:abcdef"            , ("[::1]:5000/foo", "sha256:abcdef")),
+    ("[2001:db8::1]:5000/a/b@sha256:abcdef"    , ("[2001:db8::1]:5000/a/b", "sha256:abcdef")),
+    ("[::1]:5000/foo:1.2@sha256:abcdef"        , ("[::1]:5000/foo", "sha256:abcdef")),
+    ("[2001:db8::1]:5000/a/b:v1@sha256:abcdef" , ("[2001:db8::1]:5000/a/b", "sha256:abcdef")),
+]
+
+
+@pytest.mark.parametrize("image, expected", SPLIT_IMAGE_NAME_REF_CASES)
+def test_split_image_name_ref(image, expected):
+    assert tools.split_image_name_ref(image) == expected
