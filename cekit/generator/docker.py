@@ -3,13 +3,8 @@ import os
 from typing import List
 
 from cekit.cekit_types import PathType
-from cekit.config import Config
 from cekit.generator.base import Generator
 from cekit.tools import split_image_name_ref
-
-import json
-import subprocess
-import shutil
 
 try:
     import docker
@@ -17,21 +12,11 @@ except ModuleNotFoundError:
     docker = None
 
 logger = logging.getLogger("cekit")
-config = Config()
 
 _list_manifest_types = [
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
 ]
-
-
-def _is_manifest_list(ref):
-    out = json.loads(subprocess.run(
-        [_skopeo, "inspect", "--raw", f"docker-daemon:{ref}"],
-        capture_output=True, text=True, check=True
-    ).stdout)
-
-    return out.get("mediaType") in _list_manifest_types or out.get("manifests")
 
 
 class DockerGenerator(Generator):
