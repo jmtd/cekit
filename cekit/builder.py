@@ -78,24 +78,25 @@ class Builder(Command):
         self.run()
 
     def prepare(self) -> None:
-        if self.build_engine == "podman":
-            from cekit.generator.podman import PodmanGenerator as generator_impl
+        match self.build_engine:
+            case "podman":
+                from cekit.generator.podman import PodmanGenerator as generator_impl
+                container_file: str = "Containerfile"
 
-            container_file: str = "Containerfile"
-        elif self.build_engine == "buildah":
-            from cekit.generator.docker import DockerGenerator as generator_impl
+            case "buildah":
+                from cekit.generator.local import LocalGenerator as generator_impl
+                container_file: str = "Containerfile"
 
-            container_file: str = "Containerfile"
-        elif self.build_engine == "docker":
-            from cekit.generator.docker import DockerGenerator as generator_impl
+            case "docker":
+                from cekit.generator.docker import DockerGenerator as generator_impl
+                container_file: str = "Dockerfile"
 
-            container_file: str = "Dockerfile"
-        elif self.build_engine == "osbs":
-            from cekit.generator.osbs import OSBSGenerator as generator_impl
+            case "osbs":
+                from cekit.generator.osbs import OSBSGenerator as generator_impl
+                container_file: str = "Dockerfile"
+            case _:
+                raise CekitError(f"Unsupported generator type: '{self.build_engine}'")
 
-            container_file: str = "Dockerfile"
-        else:
-            raise CekitError(f"Unsupported generator type: '{self.build_engine}'")
         LOGGER.info(f"Generating files for {self.build_engine} engine")
 
         if self.params.container_file:

@@ -3,7 +3,7 @@ import os
 from typing import List
 
 from cekit.cekit_types import PathType
-from cekit.generator.base import Generator
+from cekit.generator.local import LocalGenerator
 from cekit.tools import split_image_name_ref
 
 try:
@@ -19,7 +19,7 @@ _list_manifest_types = [
 ]
 
 
-class DockerGenerator(Generator):
+class DockerGenerator(LocalGenerator):
     def __init__(
         self,
         descriptor_path: PathType,
@@ -31,21 +31,7 @@ class DockerGenerator(Generator):
         super(DockerGenerator, self).__init__(
             descriptor_path, target, container_file, overrides, no_squash
         )
-        self._fetch_repos = True
 
-    def prepare_artifacts(self):
-        """Goes through artifacts section of image descriptor
-        and fetches all of them
-        """
-
-        logger.info("Handling artifacts for docker...")
-        target_dir = os.path.join(self.target, "image")
-
-        for image in self.images:
-            for artifact in image.all_artifacts:
-                artifact.copy(target_dir)
-
-        logger.debug("Artifacts handled")
 
     def resolve_base_image_digest(self):
         """Update the base image reference with a digest-reference equivalent,

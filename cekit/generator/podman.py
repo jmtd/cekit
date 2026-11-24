@@ -3,7 +3,7 @@ import logging
 from typing import List
 
 from cekit.cekit_types import PathType
-from cekit.generator.docker import DockerGenerator
+from cekit.generator.local import LocalGenerator
 from cekit.tools import split_image_name_ref
 
 import json
@@ -28,7 +28,7 @@ def _is_manifest_list(ref):
 
     return out.get("mediaType") in _list_manifest_types or out.get("manifests")
 
-class PodmanGenerator(DockerGenerator):
+class PodmanGenerator(LocalGenerator):
     def __init__(
         self,
         descriptor_path: PathType,
@@ -37,7 +37,7 @@ class PodmanGenerator(DockerGenerator):
         overrides: List[str],
         no_squash: bool,
     ):
-        super(DockerGenerator, self).__init__(
+        super(PodmanGenerator, self).__init__(
             descriptor_path, target, container_file, overrides, no_squash
         )
 
