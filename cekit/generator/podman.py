@@ -20,9 +20,9 @@ _list_manifest_types = [
     "application/vnd.docker.distribution.manifest.list.v2+json",
 ]
 
-def _is_manifest_list(ref):
+def _is_manifest_list(ref, uriproto="containers-storage:"):
     out = json.loads(subprocess.run(
-        [_skopeo, "inspect", "--raw", f"containers-storage:{ref}"],
+        [_skopeo, "inspect", "--raw", f"{uriproto}{ref}"],
         capture_output=True, text=True, check=True
     ).stdout)
 
@@ -41,6 +41,9 @@ class PodmanGenerator(LocalGenerator):
             descriptor_path, target, container_file, overrides, no_squash
         )
 
+    _uriproto = "containers-storage:"
+    _remote_podman = False
+
     def resolve_base_image_digest(self):
         """Update the base image reference with a digest-reference equivalent,
         if one isn't already specified."""
@@ -52,10 +55,12 @@ class PodmanGenerator(LocalGenerator):
             LOGGER.debug("resolve_base_image_digest: base image already checksum-referenced")
             return
 
+        self._handle_remote_podman()
+
         if not _podman:
             LOGGER.warning("couldn't find podman, can't resolve image digest")
             return
-        if not _skopeo:
+        if not (self._remote_podman or _skopeo):
             LOGGER.warning("couldn't find skopeo, can't resolve image digest")
             return
 
@@ -71,7 +76,7 @@ class PodmanGenerator(LocalGenerator):
 
         for digest in digests:
             try:
-                if _is_manifest_list(digest):
+                if _is_manifest_list(digest, self._uriproto):
                     (image_no_tag, _) = split_image_name_ref(frm)
                     sha256sum    = digest.rpartition("@")[-1]
 
@@ -83,3 +88,20 @@ class PodmanGenerator(LocalGenerator):
             except subprocess.SubprocessError as e:
                 LOGGER.error(f"error inspecting container metadata for {digest}\n")
                 continue
+
+    def _handle_remote_podman(self):
+        """Podman may be configured to connect to a remote host, e.g. when
+        used with Podman Machine on Mac/Windows. In that scenario, a local
+        container storage lookup with skopeo will fail. Instead, attempt to
+        connect to a remote docker registry."""
+
+        cmd = [_podman , 'info', '--format', '{{.Host.ServiceIsRemote}}']
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            LOGGER.error(cmd)
+            LOGGER.error(result.stderr)
+            return
+        self._remote_podman = json.loads(result.stdout)
+        if self._remote_podman:
+            self._uriproto = "docker://"
+            LOGGER.debug("Podman is remote. Switching look-up scheme to docker://")
