@@ -11,10 +11,13 @@ import json
 import subprocess
 import shutil
 
+try:
+    import docker
+except ModuleNotFoundError:
+    docker = None
+
 logger = logging.getLogger("cekit")
 config = Config()
-
-_docker = shutil.which('docker')
 
 _list_manifest_types = [
     "application/vnd.oci.image.index.v1+json",
@@ -70,22 +73,19 @@ class DockerGenerator(Generator):
             logger.debug("resolve_base_image_digest: base image already checksum-referenced")
             return
 
-        if not _docker:
-            logger.warning("couldn't find docker, can't resolve image digest")
+        if not docker:
+            logger.warning("couldn't import docker python library, skipping resolve_base_image_digest")
             return
 
-        # look up the base image and try to find a digest-reference
-        cmd = [_docker , 'image', 'inspect', '--format', '{{json .Descriptor}}', '--', frm]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            logger.error(cmd)
-            logger.error(result.stderr) # XXX: tag?
+        try: # XXX: version 28? timeout default value?
+            client = docker.from_env(version="auto")
+            info = client.api.inspect_image(frm)
+        except docker.errors.DockerException as e:
+            logger.error(f"couldn't inspect {frm}: {e}")
             return
-        js = json.loads(result.stdout)
 
-        if js.get("mediaType","") in _list_manifest_types:
-            sha256sum = js.get('digest','')
+        descriptor = info.get("Descriptor", {})
+        digest = descriptor.get("digest")
+        if digest and descriptor.get("mediaType") in _list_manifest_types:
             (image_no_tag, _) = split_image_name_ref(frm)
-            newfrm = f"{image_no_tag}@{sha256sum}"
-            logger.debug(f"rewriting FROM to {newfrm}")
-            self.image.base = newfrm
+            self.image.base = f"{image_no_tag}@{digest}"
